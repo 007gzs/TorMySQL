@@ -111,19 +111,26 @@ class Client(object):
     def __enter__(self):
         return self.cursor()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+    def __exit__(self, *exc_info):
+        if exc_info[0]:
+            self.rollback()
+        else:
+            self.commit()
+        del exc_info
+        self.close()
 
     if py3:
         exec("""
 async def __aenter__(self):
     return self.cursor()
 
-async def __aexit__(self, exc_type, exc_val, exc_tb):
-    if exc_type:
+async def __aexit__(self, *exc_info):
+    if exc_info[0]:
         await self.rollback()
     else:
         await self.commit()
+    del exc_info
+    await self.close()
         """)
 
     def __str__(self):

@@ -55,7 +55,12 @@ class Connection(Client):
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, *exc_info):
+        if exc_info[0]:
+            self.rollback()
+        else:
+            self.commit()
+        del exc_info
         self.close()
 
     if py3:
@@ -63,24 +68,13 @@ class Connection(Client):
 async def __aenter__(self):
     return self
 
-async def __aexit__(self, exc_type, exc_val, exc_tb):
-    if self._connection.autocommit_mode:
-        self.close()
+async def __aexit__(self, *exc_info):
+    if exc_info[0]:
+        await self.rollback()
     else:
-        try:
-            if exc_type:
-                await self.rollback()
-            else:
-                await self.commit()
-        except:
-            exc_info = sys.exc_info()
-            self.close(True)
-            try:
-                raise exc_info[1].with_traceback(exc_info[2])
-            finally:
-                exc_info = None
-        else:
-            self.close()
+        await self.commit()
+    del exc_info
+    self.close()
         """)
 
     def __del__(self):
