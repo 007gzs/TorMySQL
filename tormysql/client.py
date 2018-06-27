@@ -110,6 +110,10 @@ class Client(object):
         return self.cursor()
 
     def __exit__(self, *exc_info):
+        if exc_info[0]:
+            self.rollback()
+        else:
+            self.commit()
         del exc_info
         self.close()
 
@@ -119,6 +123,10 @@ async def __aenter__(self):
     return self
 
 async def __aexit__(self, *exc_info):
+    if exc_info[0]:
+        await self.rollback()
+    else:
+        await self.commit()
     del exc_info
     await self.close()
         """)
