@@ -15,7 +15,14 @@ from pymysql.connections import Connection as _Connection, lenenc_int, text_type
 try:
     from pymysql.connections._auth import scramble_native_password, scramble_old_password
 except ImportError:
-    from pymysql.connections import _scramble as scramble_native_password, _scramble_323 as scramble_old_password
+    from pymysql.connections import _scramble, _scramble_323
+
+    def scramble_native_password(password, message):
+        return _scramble(password.encode('latin1'), message)
+
+    def scramble_old_password(password, message):
+        return _scramble_323(password.encode('latin1'), message)
+
 from . import platform
 
 if sys.version_info[0] >= 3:
@@ -232,7 +239,7 @@ class Connection(_Connection):
 
         authresp = b''
         if self._auth_plugin_name in ('', 'mysql_native_password'):
-            authresp = _scramble(self.password.encode('latin1'), self.salt)
+            authresp = scramble_native_password(self.password, self.salt)
 
         if self.server_capabilities & CLIENT.PLUGIN_AUTH_LENENC_CLIENT_DATA:
             data += lenenc_int(len(authresp)) + authresp
@@ -265,7 +272,7 @@ class Connection(_Connection):
                 auth_packet = self._process_auth(plugin_name, auth_packet)
             else:
                 # send legacy handshake
-                data = _scramble_323(self.password.encode('latin1'), self.salt) + b'\0'
+                data = scramble_old_password(self.password, self.salt) + b'\0'
                 self.write_packet(data)
                 auth_packet = self._read_packet()
 
