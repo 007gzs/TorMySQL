@@ -79,11 +79,12 @@ async def rollback(self):
 async def __aenter__(self):
     return self
 
-async def __aexit__(self, exc_type, exc_val, exc_tb):
-    if exc_type:
+async def __aexit__(self, *exc_info):
+    if exc_info[0]:
         await self.rollback()
     else:
         await self.commit()
+    del exc_info
         """)
     else:
         @platform.coroutine
