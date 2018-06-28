@@ -9,8 +9,13 @@ import sys
 import struct
 import traceback
 from pymysql import err
-from pymysql.constants import CR
-from pymysql.connections import Connection as _Connection
+from pymysql.charset import charset_by_name
+from pymysql.constants import COMMAND, CLIENT, CR
+from pymysql.connections import Connection as _Connection, lenenc_int, text_type
+try:
+    from pymysql.connections._auth import scramble_native_password, scramble_old_password
+except ImportError:
+    from pymysql.connections import _scramble as scramble_native_password, _scramble_323 as scramble_old_password
 from . import platform
 
 if sys.version_info[0] >= 3:
