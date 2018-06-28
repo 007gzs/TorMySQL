@@ -13,7 +13,7 @@ from pymysql.charset import charset_by_name
 from pymysql.constants import COMMAND, CLIENT, CR
 from pymysql.connections import Connection as _Connection, lenenc_int, text_type
 try:
-    from pymysql.connections._auth import scramble_native_password, scramble_old_password
+    from pymysql._auth import scramble_native_password, scramble_old_password
 except ImportError:
     from pymysql.connections import _scramble, _scramble_323
 
