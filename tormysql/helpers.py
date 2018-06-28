@@ -66,11 +66,11 @@ async def __aenter__(self):
     return self
 
 async def __aexit__(self, *exc_info):
-    del exc_info
-    if exc_info:
+    if exc_info[0]:
         await self.rollback()
     else:
         await self.commit()
+    del exc_info
         """)
     else:
         @platform.coroutine
