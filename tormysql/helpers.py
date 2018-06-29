@@ -84,7 +84,6 @@ async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.rollback()
     else:
         await self.commit()
-    del exc_info
         """)
     else:
         @platform.coroutine
