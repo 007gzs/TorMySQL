@@ -79,8 +79,8 @@ async def rollback(self):
 async def __aenter__(self):
     return self
 
-async def __aexit__(self, *exc_info):
-    if exc_info[0]:
+async def __aexit__(self, exc_type, exc_val, exc_tb):
+    if exc_type:
         await self.rollback()
     else:
         await self.commit()

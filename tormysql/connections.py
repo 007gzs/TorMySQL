@@ -9,14 +9,8 @@ import sys
 import struct
 import traceback
 from pymysql import err
-from pymysql.charset import charset_by_name
-from pymysql.constants import COMMAND, CLIENT, CR
-from pymysql.connections import Connection as _Connection, lenenc_int, text_type
-try:
-    from pymysql._auth import scramble_native_password, scramble_old_password
-except ImportError:
-    from pymysql.connections import _scramble as scramble_native_password, _scramble_323 as scramble_old_password
-
+from pymysql.constants import CR
+from pymysql.connections import Connection as _Connection
 from . import platform
 
 if sys.version_info[0] >= 3:
@@ -230,61 +224,7 @@ class Connection(_Connection):
 
     def _request_authentication(self):
         super(Connection, self)._request_authentication()
-            child_gr = greenlet.getcurrent()
-            main = child_gr.parent
-            assert main is not None, "Execut must be running in child greenlet"
-
-            def finish(future):
-                if (hasattr(future, "_exc_info") and future._exc_info is not None) \
-                        or (hasattr(future, "_exception") and future._exception is not None):
-                    child_gr.throw(future.exception())
-                else:
-                    child_gr.switch(future.result())
-
-            future = self._sock.start_tls(False, self.ctx, server_hostname=self.host, connect_timeout=self.connect_timeout)
-            future.add_done_callback(finish)
-            self._rfile = self._sock = main.switch()
-
-        data = data_init + self.user + b'\0'
-
-        authresp = b''
-        if self._auth_plugin_name in ('', 'mysql_native_password'):
-            authresp = scramble_native_password(self.password.encode('latin1'), self.salt)
-
-        if self.server_capabilities & CLIENT.PLUGIN_AUTH_LENENC_CLIENT_DATA:
-            data += lenenc_int(len(authresp)) + authresp
-        elif self.server_capabilities & CLIENT.SECURE_CONNECTION:
-            data += struct.pack('B', len(authresp)) + authresp
-        else:  # pragma: no cover - not testing against servers without secure auth (>=5.0)
-            data += authresp + b'\0'
-
-        if self.db and self.server_capabilities & CLIENT.CONNECT_WITH_DB:
-            if isinstance(self.db, text_type):
-                self.db = self.db.encode(self.encoding)
-            data += self.db + b'\0'
-
-        if self.server_capabilities & CLIENT.PLUGIN_AUTH:
-            name = self._auth_plugin_name
-            if isinstance(name, text_type):
-                name = name.encode('ascii')
-            data += name + b'\0'
-
-        self.write_packet(data)
-        auth_packet = self._read_packet()
-
-        # if authentication method isn't accepted the first byte
-        # will have the octet 254
-        if auth_packet.is_auth_switch_request():
-            # https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::AuthSwitchRequest
-            auth_packet.read_uint8()  # 0xfe packet identifier
-            plugin_name = auth_packet.read_string()
-            if self.server_capabilities & CLIENT.PLUGIN_AUTH and plugin_name is not None:
-                auth_packet = self._process_auth(plugin_name, auth_packet)
-            else:
-                # send legacy handshake
-                data = scramble_old_password(self.password.encode('latin1'), self.salt) + b'\0'
-                self.write_packet(data)
-                auth_packet = self._read_packet()
+        self._rfile = self._sock
 
     def __str__(self):
         return "%s %s" % (super(Connection, self).__str__(),
