@@ -52,15 +52,31 @@ class Connection(Client):
             return self.do_close()
         return self._pool.release_connection(self)
 
+    @platform.coroutine
+    def exit(self, exc_type, exc_val, exc_tb):
+        if self._connection.autocommit_mode:
+            yield self.close()
+        else:
+            try:
+                if exc_type:
+                    yield self.rollback()
+                else:
+                    yield self.commit()
+            except:
+                exc_info = sys.exc_info()
+                yield self.close(True)
+                try:
+                    raise exc_info[1].with_traceback(exc_info[2])
+                finally:
+                    exc_info = None
+            else:
+                yield self.close()
+
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            self.rollback()
-        else:
-            self.commit()
-        del exc_info
+        self.exit(exc_type, exc_val, exc_tb)
 
     if py3:
         exec("""
