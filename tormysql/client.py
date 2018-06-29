@@ -20,6 +20,7 @@ class Client(object):
         self._connection = None
         self._closed = False
         self._close_callback = None
+        self._py2_sync_exit = kwargs.pop('py2_sync_exit', False)
 
         if "cursorclass" in kwargs and issubclass(kwargs["cursorclass"], Cursor):
             kwargs["cursorclass"] = kwargs["cursorclass"].__delegate_class__
@@ -111,12 +112,18 @@ class Client(object):
     def __enter__(self):
         return self.cursor()
 
-
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            self.rollback()
-        else:
-            self.commit()
+        try:
+            if exc_type:
+                self.rollback()
+            else:
+                self.commit()
+        except:
+            exc_info = sys.exc_info()
+            try:
+                raise exc_info[1].with_traceback(exc_info[2])
+            finally:
+                exc_info = None
 
     if py3:
         exec("""
