@@ -51,6 +51,11 @@ async def test_execute(self):
     datas = cursor.fetchall()
     assert datas
 
+    async with await self.pool.begin() as transaction:
+        cursor = await transaction.execute("select * from test limit 1")
+        datas = cursor.fetchall()
+        assert datas
+
     async with await self.pool.Connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute("SELECT * FROM test limit 10")

@@ -7,7 +7,7 @@ from setuptools import setup
 
 setup(
     name='tormysql',
-    version='0.3.8',
+    version='0.3.9',
     packages=['tormysql', 'tormysql.platform'],
     install_requires=[
         'tornado>=5.0',
