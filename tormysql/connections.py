@@ -224,6 +224,7 @@ class Connection(_Connection):
 
     def _request_authentication(self):
         super(Connection, self)._request_authentication()
+
         self._rfile = self._sock
 
     def __str__(self):

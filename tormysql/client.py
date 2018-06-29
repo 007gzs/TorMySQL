@@ -20,7 +20,6 @@ class Client(object):
         self._connection = None
         self._closed = False
         self._close_callback = None
-        self._py2_sync_exit = kwargs.pop('py2_sync_exit', False)
 
         if "cursorclass" in kwargs and issubclass(kwargs["cursorclass"], Cursor):
             kwargs["cursorclass"] = kwargs["cursorclass"].__delegate_class__
